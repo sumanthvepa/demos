@@ -1,2 +1,4 @@
+issue002-signup:
+  Create the signup application
 issue001-initialize-repository:
   Initialize the repository
