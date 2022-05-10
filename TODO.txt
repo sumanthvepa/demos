@@ -1,0 +1,2 @@
+issue001-initialize-repository:
+  Initialize the repository
