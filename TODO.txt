@@ -1,7 +1,9 @@
 issue002-auth:
   Create auth application in various languages
   issue002a-auth-python
-    Create the auth application usring python
+    Create the auth application using python
+    issue002a1-auth-python-flask
+      Create the auth application using python and flask
 
 issue001-initialize-repository:
   Initialize the repository
