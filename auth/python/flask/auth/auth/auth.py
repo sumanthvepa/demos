@@ -66,10 +66,8 @@ def signin_page():
   # the user to this page if there were errors in the
   # sign in credentials.
   redirect_url = request.args.get('redirect_url', None)
-  #redirect_url = session.get('redirect_url', None)
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
-    #session['redirect_url'] = redirect_url
 
   # TODO: Perhaps replace with WTForms and flask_wtforms?
   # Generate a new CSRF token. This is done
@@ -85,7 +83,7 @@ def signin_page():
 
 @app.route('/signin/', methods=['POST'])
 def process_signin():
-  # TODO: Check CSRF token and return 401 if the CSRF token
+  # Check CSRF token and return 401 if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token', None)
   session_csrf_token = session.get('csrf_token', None)
@@ -95,6 +93,10 @@ def process_signin():
   username_email = request.form.get('username_email', None)
   password = request.form.get('password', None)
 
+  # Get the redirect URL from the from the hidden input
+  # field in the form. Use that (after validation) to
+  # redirect the user to the appropriate post signin
+  # page.
   redirect_url = request.form.get('redirect_url', None)
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
