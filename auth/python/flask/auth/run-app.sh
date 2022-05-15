@@ -4,4 +4,5 @@
 # already been sourced
 
 cd auth;
-FLASK_APP=auth flask run --host=0.0.0.0 
+FLASK_DEBUG=1 FLASK_ENV=development FLASK_APP=auth flask run --host=0.0.0.0
+
