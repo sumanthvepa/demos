@@ -19,7 +19,7 @@
       </form>
     {% else %}
       <p>user not defined</p>
-      <a href="{{ url_for('signin_page') }}">sign in</a>
+      <a href="{{ url_for('signin_page') }}?redirect_url={{url_for('home_page') }}">sign in</a>
     {% endif %}
   </body>
 </html>

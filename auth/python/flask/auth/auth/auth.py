@@ -65,10 +65,11 @@ def signin_page():
   # another URL (e.g. the POST /signin URL will redirect
   # the user to this page if there were errors in the
   # sign in credentials.
-  redirect_url = session.get('redirect_url', None)
+  redirect_url = request.args.get('redirect_url', None)
+  #redirect_url = session.get('redirect_url', None)
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
-    session['redirect_url'] = redirect_url
+    #session['redirect_url'] = redirect_url
 
   # TODO: Perhaps replace with WTForms and flask_wtforms?
   # Generate a new CSRF token. This is done
