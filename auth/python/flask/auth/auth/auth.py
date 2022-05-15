@@ -9,7 +9,6 @@ from flask import (
 
 app = Flask(__name__)
 
-# TODO: Correctly gnerate a cryptographically secure secret key
 app.secret_key = os.environ.get('AUTH_APP_FLASK_SECRET_KEY')
 if app.secret_key is None:
   raise RuntimeError(
