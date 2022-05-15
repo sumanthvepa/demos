@@ -1,3 +1,4 @@
+import os
 from flask import (
   Flask,
   redirect,
@@ -9,7 +10,10 @@ from flask import (
 app = Flask(__name__)
 
 # TODO: Correctly gnerate a cryptographically secure secret key
-app.secret_key = b'dummy_secret_key'
+app.secret_key = os.environ.get('AUTH_APP_FLASK_SECRET_KEY')
+if app.secret_key is None:
+  raise RuntimeError(
+    'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
 
 def generate_csrf_token():
   # TODO: Correctly generate a cryptographically secure
