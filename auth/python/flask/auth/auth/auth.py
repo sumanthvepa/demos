@@ -117,7 +117,7 @@ def process_signin():
 
 @app.route('/signout/', methods=['POST'])
 def process_signout():
-  # TODO: Check CSRF token and return 401 if the CSRF token
+  # Check CSRF token and return 401 if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token', None)
   session_csrf_token = session.get('csrf_token', None)
