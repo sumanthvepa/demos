@@ -1,4 +1,5 @@
 import os
+import secrets
 from flask import (
   Flask,
   redirect,
@@ -15,9 +16,7 @@ if app.secret_key is None:
     'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
 
 def generate_csrf_token():
-  # TODO: Correctly generate a cryptographically secure
-  #       csrf_token
-  return 'dummy_csrf_token'
+  return secrets.token_urlsafe(64)
 
 def is_valid_redirect_url(redirect_url):
   # Only redirects to specific pages are permissible.
