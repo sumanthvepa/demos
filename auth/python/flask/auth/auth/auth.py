@@ -32,24 +32,44 @@ class SignInError(RuntimeError):
   pass
 
 # TODO: Move these dictionaries to authws and fetch them from the database
-valid_usernames = {'luser': {'display_name': 'Lawrence Ugnon Ser'} }
-valid_emails = { 'luser@example.com': {'display_name': 'Lawrence Ugnon Ser'} }
-valid_passwords = {
-  'luser': bcrypt.hashpw('12345'.encode('utf-8'), bcrypt.gensalt(16))
+users = {
+  '1': {
+    'user_id': 1,
+    'username': 'luser',
+    'email': 'luser@example.com',
+    'display_name': 'Lawrence Un Ser',
+    'password_hash':
+      bcrypt.hashpw('12345'.encode('utf-8'), bcrypt.gensalt(12))
+  }
 }
 
+by_username = dict(zip([user['username'] for user in users.values()], users.values()))
+by_email = dict(zip([user['email'] for user in users.values()], users.values()))
+
+
+def find_user_by_username(username):
+  return by_username.get(username, None)
+
+
+def find_user_by_email(email):
+   return by_email.get(email, None)
+
+
+def find_user_by_username_or_email(username_email):
+  user = find_user_by_username(username_email)
+  if not user:
+    user = find_user_by_email(username_email)
+  return user
+
+
 def authenticate_credentials(username_email, password):
-  # TODO: Move this all this code to authws
-  if username_email in valid_usernames:
-    user = valid_usernames[username_email]
-  elif username_email in valid_emails:
-    user = valid_emails[username_email]
-  else:
+  user = find_user_by_username_or_email(username_email)
+  if not user:
     raise SignInError(
       'We could not find this username or email in our records')
 
   password = password.encode('utf-8')
-  if not bcrypt.checkpw(password, valid_passwords[username_email]):
+  if not bcrypt.checkpw(password, user.get('password_hash')):
     raise SignInError(
       'The password you entered did not '
       + 'match with the one we have on file for you.')
@@ -57,9 +77,14 @@ def authenticate_credentials(username_email, password):
   return user
 
 
+def user_from_user_id(user_id):
+  return users.get(str(user_id), None)
+
+
 @app.route('/', methods=['GET'])
 def home_page():
   # TODO: Perhaps replace with WTForms and flask_wtforms?
+
   # Generate a new CSRF token. This is done
   # every time the signin form is generated.
   csrf_token = generate_csrf_token()
@@ -67,7 +92,8 @@ def home_page():
 
   redirect_url = url_for('home_page')
 
-  user = session.get('user', None)
+  user = user_from_user_id(session.get('user_id', None))
+
   return render_template(
       'index.jinja2',
       user=user, 
@@ -117,8 +143,8 @@ def signin_page():
 @app.route('/signin/', methods=['POST'])
 def process_signin():
   # Reset the session user field.
-  if 'user' in session:
-    del session['user']
+  if 'user_id' in session:
+    del session['user_id']
 
   # Clean up the error related values in the session
   if 'error' in session:
@@ -151,7 +177,7 @@ def process_signin():
   # fail and take the visitor back to the signin page with errors
   try:
     user = authenticate_credentials(username_email, password)
-    session['user'] = user
+    session['user_id'] = user['user_id']
     return redirect(redirect_url)
   except SignInError as ex:
     session['error'] = str(ex)
@@ -169,13 +195,12 @@ def process_signout():
   if form_csrf_token != session_csrf_token:
     abort(401)
 
-  user = session.get('user', None)
+  user = user_from_user_id(session.get('user_id', None))
   if user:
-    del session['user']
+    del session['user_id']
 
   redirect_url = request.form.get('redirect_url', None)
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
 
   return redirect(redirect_url)
-  
