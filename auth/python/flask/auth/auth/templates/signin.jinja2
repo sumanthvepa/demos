@@ -14,7 +14,7 @@
       {% if error %}
         {{ error }}<br>
       {% endif %}
-      <label for="username_email">Username or Email</label>
+      <label for="username_email">Username or Email: </label>
       <input tabindex="1"
              type="text"
              name="username_email"
@@ -22,18 +22,17 @@
              {% if default_username_email %}
                value="{{ default_username_email }}"
              {% endif %}
-             required>
-      <label for="password">Password</label>
+             required><br>
+      <label for="password">Password:</label>
       <input tabindex="2"
              type="password"
              name="password"
              id="password"
              {% if default_password %}value="{{ default_password }}"{% endif %}
-             required>
-      <input tabindex="3" type="submit" value="signin">
+             required><br>
       <input type="hidden" name="redirect_url" value="{{ redirect_url }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    </form>
+      <input tabindex="3" type="submit" value="signin">
     </form>
   </body>
 </html>
