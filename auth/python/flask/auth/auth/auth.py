@@ -123,9 +123,9 @@ def process_signin():
   # Clean up the error related values in the session
   if 'error' in session:
     del session['error']
-  if default_username_email:
+  if 'default_username_email' in session:
     del session['default_username_email']
-  if default_password:
+  if 'default_password' in session:
     del session['default_password']
 
   # Check CSRF token and return 401 if the CSRF token
