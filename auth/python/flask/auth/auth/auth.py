@@ -155,12 +155,12 @@ def process_signin():
   if 'default_password' in session:
     del session['default_password']
 
-  # Check CSRF token and return 401 Not Found if the CSRF token
-  # does not match the one stored in the session.
+  # Check CSRF token and return 403 Forbidden if the
+  # CSRF token does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token', None)
   session_csrf_token = session.get('csrf_token', None)
   if form_csrf_token != session_csrf_token:
-    abort(HTTPStatus.NOT_FOUND)
+    abort(HTTPStatus.FORBIDDEN)
 
   # Get the redirect URL from the from the hidden input
   # field in the form. Use that (after validation) to
@@ -189,12 +189,12 @@ def process_signin():
 
 @app.route('/signout/', methods=['POST'])
 def process_signout():
-  # Check CSRF token and return 401 Not Found if the CSRF token
+  # Check CSRF token and return 403 Forbidden if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token', None)
   session_csrf_token = session.get('csrf_token', None)
   if form_csrf_token != session_csrf_token:
-    abort(HTTPStatus.NOT_FOUND)
+    abort(HTTPStatus.FORBIDDEN)
 
   user = user_from_user_id(session.get('user_id', None))
   if user:
