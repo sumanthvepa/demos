@@ -3,6 +3,7 @@ import secrets
 from http import HTTPStatus
 
 import bcrypt
+import requests
 from flask import (
   Flask,
   abort,
@@ -68,7 +69,6 @@ def authenticate_credentials_dummy(username_email, password):
   if not user:
     raise SignInError(
       'We could not find this username or email in our records')
-
   password = password.encode('utf-8')
   if not bcrypt.checkpw(password, user.get('password_hash')):
     raise SignInError(
@@ -78,8 +78,40 @@ def authenticate_credentials_dummy(username_email, password):
   return user
 
 
+API_SERVER_URL = 'http://nines.milestone42.com'
+def authenticate_credentials_remote(username_email, password):
+  params = {'username_email': username_email, 'password': password}
+  authws_authenticate_url = API_SERVER_URL + '/users/'
+
+  r = requests.get(authws_authenticate_url, params=params)
+  if r.status_code == HTTPStatus.NOT_FOUND:
+    raise SignInError(
+      'We could not find this username or email in our records')
+  if r.status_code == HTTPStatus.FORBIDDEN:
+    raise SignInError(
+      'The password you entered did not '
+      + 'match with the one we have on file for you.')
+  if r.status_code != HTTPStatus.OK:
+    raise SignInError(
+      'An internal service seems to be malfunctioning. '
+      + 'Please try again shortly or contact our support staff. ' +
+      + 'Sorry for the inconvenience')
+
+  return r.json()
+
+
 def user_from_user_id_dummy(user_id):
   return users.get(str(user_id), None)
+
+def user_from_user_id_remote(user_id):
+  authws_user_url = API_SERVER_URL + '/user/' + user_id;
+  r = requests.get(authws_user_url)
+  if (r.status_code != 200):
+    raise SignInError(
+      'An internal service seems to be malfunctioning. '
+      + 'Please try again shortly or contact our support staff. ' +
+      + 'Sorry for the inconvenience')
+  return r.json()
 
 
 @app.route('/', methods=['GET'])
