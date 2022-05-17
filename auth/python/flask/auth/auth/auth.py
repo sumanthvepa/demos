@@ -63,7 +63,7 @@ def find_user_by_username_or_email(username_email):
   return user
 
 
-def authenticate_credentials(username_email, password):
+def authenticate_credentials_dummy(username_email, password):
   user = find_user_by_username_or_email(username_email)
   if not user:
     raise SignInError(
@@ -78,7 +78,7 @@ def authenticate_credentials(username_email, password):
   return user
 
 
-def user_from_user_id(user_id):
+def user_from_user_id_dummy(user_id):
   return users.get(str(user_id), None)
 
 
@@ -93,7 +93,7 @@ def home_page():
 
   redirect_url = url_for('home_page')
 
-  user = user_from_user_id(session.get('user_id', None))
+  user = user_from_user_id_dummy(session.get('user_id', None))
 
   return render_template(
       'index.jinja2',
@@ -177,7 +177,7 @@ def process_signin():
   # Get the user by authenticating their credentials or
   # fail and take the visitor back to the signin page with errors
   try:
-    user = authenticate_credentials(username_email, password)
+    user = authenticate_credentials_dummy(username_email, password)
     session['user_id'] = user['user_id']
     return redirect(redirect_url)
   except SignInError as ex:
@@ -196,7 +196,7 @@ def process_signout():
   if form_csrf_token != session_csrf_token:
     abort(HTTPStatus.FORBIDDEN)
 
-  user = user_from_user_id(session.get('user_id', None))
+  user = user_from_user_id_dummy(session.get('user_id', None))
   if user:
     del session['user_id']
 
