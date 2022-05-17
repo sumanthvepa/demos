@@ -22,8 +22,7 @@ def generate_csrf_token():
 
 def is_valid_redirect_url(redirect_url):
   # Only redirects to specific pages are permissible.
-  # Otherwise 
-  # This checks that the redirect is valid. If so
+  # This checks that the redirect is valid. If so,
   # it returns True. Otherwise, it returns False.
   VALID_REDIRECTS = [url_for('home_page')]
   return redirect_url in VALID_REDIRECTS
