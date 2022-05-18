@@ -12,10 +12,10 @@
     <h1>Authentication Demo Application</h1>
     {% if user is defined and user is not none %}
       <p>Welcome {{ user.display_name }}</p>
-      <form action="/signout/" method="post">
+      <form action="/sign-out/" method="post">
         <input type="hidden" name="redirect_url" value="{{ redirect_url }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input tabindex="0" type="submit" value="signout">
+        <input tabindex="0" type="submit" value="sign-out">
       </form>
     {% else %}
       <p>user not defined</p>

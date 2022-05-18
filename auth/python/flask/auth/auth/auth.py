@@ -8,7 +8,7 @@ from flask import (
   Flask,
   abort,
   redirect,
-  render_template, 
+  render_template,
   request,
   session,
   url_for)
@@ -20,18 +20,24 @@ if app.secret_key is None:
   raise RuntimeError(
     'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
 
+API_SERVER_URL = 'http://nines.milestone42.com'
+
+
 def generate_csrf_token():
   return secrets.token_urlsafe(64)
+
 
 def is_valid_redirect_url(redirect_url):
   # Only redirects to specific pages are permissible.
   # This checks that the redirect is valid. If so,
   # it returns True. Otherwise, it returns False.
-  VALID_REDIRECTS = [url_for('home_page')]
-  return redirect_url in VALID_REDIRECTS
+  valid_redirects = [url_for('home_page')]
+  return redirect_url in valid_redirects
+
 
 class SignInError(RuntimeError):
   pass
+
 
 # TODO: Move these dictionaries to authws and fetch them from the database
 users = {
@@ -40,8 +46,7 @@ users = {
     'username': 'luser',
     'email': 'luser@example.com',
     'display_name': 'Lawrence Un Ser',
-    'password_hash':
-      bcrypt.hashpw('12345'.encode('utf-8'), bcrypt.gensalt(12))
+    'password_hash': bcrypt.hashpw('12345'.encode('utf-8'), bcrypt.gensalt(12))
   }
 }
 
@@ -54,7 +59,7 @@ def find_user_by_username(username):
 
 
 def find_user_by_email(email):
-   return by_email.get(email, None)
+  return by_email.get(email, None)
 
 
 def find_user_by_username_or_email(username_email):
@@ -78,7 +83,6 @@ def authenticate_credentials_dummy(username_email, password):
   return user
 
 
-API_SERVER_URL = 'http://nines.milestone42.com'
 def authenticate_credentials_remote(username_email, password):
   params = {'username_email': username_email, 'password': password}
   authws_authenticate_url = API_SERVER_URL + '/users/'
@@ -94,7 +98,7 @@ def authenticate_credentials_remote(username_email, password):
   if r.status_code != HTTPStatus.OK:
     raise SignInError(
       'An internal service seems to be malfunctioning. '
-      + 'Please try again shortly or contact our support staff. ' +
+      + 'Please try again shortly or contact our support staff. '
       + 'Sorry for the inconvenience')
 
   return r.json()
@@ -103,13 +107,14 @@ def authenticate_credentials_remote(username_email, password):
 def user_from_user_id_dummy(user_id):
   return users.get(str(user_id), None)
 
+
 def user_from_user_id_remote(user_id):
-  authws_user_url = API_SERVER_URL + '/user/' + user_id;
+  authws_user_url = API_SERVER_URL + '/user/' + user_id
   r = requests.get(authws_user_url)
-  if (r.status_code != 200):
+  if r.status_code != 200:
     raise SignInError(
       'An internal service seems to be malfunctioning. '
-      + 'Please try again shortly or contact our support staff. ' +
+      + 'Please try again shortly or contact our support staff. '
       + 'Sorry for the inconvenience')
   return r.json()
 
@@ -117,7 +122,6 @@ def user_from_user_id_remote(user_id):
 @app.route('/', methods=['GET'])
 def home_page():
   # TODO: Perhaps replace with WTForms and flask_wtforms?
-
   # Generate a new CSRF token. This is done
   # every time the signin form is generated.
   csrf_token = generate_csrf_token()
@@ -128,10 +132,10 @@ def home_page():
   user = user_from_user_id_dummy(session.get('user_id', None))
 
   return render_template(
-      'index.jinja2',
-      user=user, 
-      redirect_url=redirect_url,
-      csrf_token=csrf_token)
+    'index.jinja2',
+    user=user,
+    redirect_url=redirect_url,
+    csrf_token=csrf_token)
 
 
 @app.route('/signin/', methods=['GET'])
@@ -150,11 +154,11 @@ def signin_page():
   if default_password:
     del session['default_password']
 
-  # Get the redirect URL (This will be set if 
-  # if the Sign In is triggered by a redirect from
+  # Get the redirect URL. This will be set if
+  # the Sign In is triggered by a redirect from
   # another URL (e.g. the POST /signin URL will redirect
   # the user to this page if there were errors in the
-  # sign in credentials.
+  # sign in credentials.)
   redirect_url = request.args.get('redirect_url', None)
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
@@ -172,6 +176,7 @@ def signin_page():
     default_password=default_password,
     redirect_url=redirect_url,
     csrf_token=csrf_token)
+
 
 @app.route('/signin/', methods=['POST'])
 def process_signin():
@@ -194,7 +199,7 @@ def process_signin():
   if form_csrf_token != session_csrf_token:
     abort(HTTPStatus.FORBIDDEN)
 
-  # Get the redirect URL from the from the hidden input
+  # Get the redirect URL from the hidden input
   # field in the form. Use that (after validation) to
   # redirect the user to the appropriate post signin
   # page.
@@ -216,11 +221,11 @@ def process_signin():
     session['error'] = str(ex)
     session['default_username_email'] = username_email
     session['default_password'] = password
-    return redirect(url_for('signin_page') + '?redirect_url='+redirect_url)
-  
+    return redirect(url_for('signin_page') + '?redirect_url=' + redirect_url)
 
-@app.route('/signout/', methods=['POST'])
-def process_signout():
+
+@app.route('/sign-out/', methods=['POST'])
+def process_sign_out():
   # Check CSRF token and return 403 Forbidden if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token', None)
