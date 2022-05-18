@@ -1,11 +1,7 @@
-from http import HTTPStatus
-
-import bcrypt
-from flask import Flask, Response, request
+from flask import Flask
 
 
 app = Flask(__name__)
-
 
 
 @app.route('/api/users/', methods=['GET'])
