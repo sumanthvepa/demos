@@ -38,6 +38,7 @@ class AuthStatus(Enum):
   NO_SUCH_USER = 2, HTTPStatus.NOT_FOUND, 'No such user'
   NO_PASSWORD_SUPPLIED = 3, HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
   INCORRECT_PASSWORD = 4, HTTPStatus.FORBIDDEN, 'Incorrect password'
+  NO_USER_TOKEN_SUPPLIED = 5, HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
   INVALID_APP_USER_TOKEN = 5, HTTPStatus.BAD_REQUEST, 'Invalid application user token'
   CLIENT_ERROR = 6, HTTPStatus.BAD_REQUEST, 'Client error'
   INTERNAL_ERROR = 7, HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
@@ -137,9 +138,12 @@ def authenticate_user(user_id):
   token = bcrypt.hashpw(combined_key.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
   return {'user_id': user_id, 'authenticated': True, 'token': token}, HTTPStatus.OK
 
+
 @app.route('/api/user/<int:user_id>', methods=['GET'])
 def get_user(user_id):
   token_raw = request.args.get('token')
+  if not token_raw:
+    raise AuthError(AuthStatus.NO_USER_TOKEN_SUPPLIED)
   token = token_raw.encode('utf-8')
   combined_key = str(user_id) + app.secret_key
   if not bcrypt.checkpw(combined_key.encode('utf-8'), token):

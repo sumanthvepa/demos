@@ -2,7 +2,6 @@ import os
 import secrets
 from http import HTTPStatus
 
-import bcrypt
 import requests
 from flask import (
   Flask,
@@ -20,7 +19,10 @@ if app.secret_key is None:
   raise RuntimeError(
     'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
 
-API_SERVER_URL = 'http://nines.milestone42.com'
+#TODO: Get these variable from settings
+AUTHWS_SERVER_URL = 'http://nines.milestone42.com:5001'
+AUTHWS_USERS_URL = AUTHWS_SERVER_URL + '/api/users/'
+AUTHWS_USER_URL = AUTHWS_SERVER_URL + '/api/user'
 
 
 def generate_csrf_token():
@@ -39,58 +41,26 @@ class SignInError(RuntimeError):
   pass
 
 
-# TODO: Move these dictionaries to authws and fetch them from the database
-users = {
-  '1': {
-    'user_id': 1,
-    'username': 'luser',
-    'email': 'luser@example.com',
-    'display_name': 'Lawrence Un Ser',
-    'password_hash': bcrypt.hashpw('12345'.encode('utf-8'), bcrypt.gensalt(12))
-  }
-}
-
-by_username = dict(zip([user['username'] for user in users.values()], users.values()))
-by_email = dict(zip([user['email'] for user in users.values()], users.values()))
-
-
-def find_user_by_username(username):
-  return by_username.get(username, None)
-
-
-def find_user_by_email(email):
-  return by_email.get(email, None)
-
-
-def find_user_by_username_or_email(username_email):
-  user = find_user_by_username(username_email)
-  if not user:
-    user = find_user_by_email(username_email)
-  return user
-
-
-def authenticate_credentials_dummy(username_email, password):
-  user = find_user_by_username_or_email(username_email)
-  if not user:
-    raise SignInError(
-      'We could not find this username or email in our records')
-  password = password.encode('utf-8')
-  if not bcrypt.checkpw(password, user.get('password_hash')):
-    raise SignInError(
-      'The password you entered did not '
-      + 'match with the one we have on file for you.')
-
-  return user
-
-
-def authenticate_credentials_remote(username_email, password):
-  params = {'username_email': username_email, 'password': password}
-  authws_authenticate_url = API_SERVER_URL + '/users/'
-
-  r = requests.get(authws_authenticate_url, params=params)
+def find_user_id(username_email, api_session=None):
+  rq = api_session if api_session else requests
+  params = {'username_email': username_email}
+  r = rq.get(AUTHWS_USERS_URL, params=params)
   if r.status_code == HTTPStatus.NOT_FOUND:
     raise SignInError(
       'We could not find this username or email in our records')
+  if r.status_code != HTTPStatus.OK:
+    raise SignInError(
+      'An internal service seems to be malfunctioning. '
+      + 'Please try again shortly or contact our support staff. '
+      + 'Sorry for the inconvenience')
+  d = r.json()
+  return d.get('user_id')
+
+
+def authenticate_user_id(user_id, password, api_session=None):
+  rq = api_session if api_session else requests
+  params = {'password': password}
+  r = rq.get(AUTHWS_USER_URL + '/' + str(user_id) + '/authenticate', params=params)
   if r.status_code == HTTPStatus.FORBIDDEN:
     raise SignInError(
       'The password you entered did not '
@@ -100,23 +70,31 @@ def authenticate_credentials_remote(username_email, password):
       'An internal service seems to be malfunctioning. '
       + 'Please try again shortly or contact our support staff. '
       + 'Sorry for the inconvenience')
-
-  return r.json()
-
-
-def user_from_user_id_dummy(user_id):
-  return users.get(str(user_id), None)
+  d = r.json()
+  return d.get('token')
 
 
-def user_from_user_id_remote(user_id):
-  authws_user_url = API_SERVER_URL + '/user/' + user_id
-  r = requests.get(authws_user_url)
-  if r.status_code != 200:
+def get_user(user_id, token, api_session=None):
+  if not user_id:
+    return None
+  rq = api_session if api_session else requests
+  params = {'token': token}
+  r = rq.get(AUTHWS_USER_URL + '/' + str(user_id), params=params)
+  if r.status_code != HTTPStatus.OK:
     raise SignInError(
       'An internal service seems to be malfunctioning. '
       + 'Please try again shortly or contact our support staff. '
       + 'Sorry for the inconvenience')
   return r.json()
+
+
+def authenticate_credentials(username_email, password):
+  with requests.session() as api_session:
+    user_id = find_user_id(username_email, api_session)
+    token = authenticate_user_id(user_id, password, api_session)
+    user = get_user(user_id, token, api_session)
+    user['token'] = token
+    return user
 
 
 @app.route('/', methods=['GET'])
@@ -129,7 +107,7 @@ def home_page():
 
   redirect_url = url_for('home_page')
 
-  user = user_from_user_id_dummy(session.get('user_id', None))
+  user = get_user(session.get('user_id'), session.get('user_token'))
 
   return render_template(
     'index.jinja2',
@@ -183,6 +161,8 @@ def process_signin():
   # Reset the session user field.
   if 'user_id' in session:
     del session['user_id']
+  if 'user_token' in session:
+    del session['user_token']
 
   # Clean up the error related values in the session
   if 'error' in session:
@@ -214,8 +194,9 @@ def process_signin():
   # Get the user by authenticating their credentials or
   # fail and take the visitor back to the signin page with errors
   try:
-    user = authenticate_credentials_dummy(username_email, password)
+    user = authenticate_credentials(username_email, password)
     session['user_id'] = user['user_id']
+    session['user_token'] = user['token']
     return redirect(redirect_url)
   except SignInError as ex:
     session['error'] = str(ex)
@@ -228,16 +209,17 @@ def process_signin():
 def process_sign_out():
   # Check CSRF token and return 403 Forbidden if the CSRF token
   # does not match the one stored in the session.
-  form_csrf_token = request.form.get('csrf_token', None)
-  session_csrf_token = session.get('csrf_token', None)
+  form_csrf_token = request.form.get('csrf_token')
+  session_csrf_token = session.get('csrf_token')
   if form_csrf_token != session_csrf_token:
     abort(HTTPStatus.FORBIDDEN)
 
-  user = user_from_user_id_dummy(session.get('user_id', None))
+  user = get_user(session.get('user_id'), session.get('user_token'))
   if user:
     del session['user_id']
+    del session['user_token']
 
-  redirect_url = request.form.get('redirect_url', None)
+  redirect_url = request.form.get('redirect_url')
   if not is_valid_redirect_url(redirect_url):
     redirect_url = url_for('home_page')
 
