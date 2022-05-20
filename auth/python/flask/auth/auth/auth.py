@@ -14,6 +14,7 @@ from flask import (
 
 
 def create_app():
+  """ Create fully configured Flask auth app"""
   auth_app = Flask(__name__)
   auth_app.secret_key = os.environ.get('AUTH_APP_FLASK_SECRET_KEY')
   if auth_app.secret_key is None:
@@ -31,10 +32,12 @@ AUTHWS_USER_URL = AUTHWS_SERVER_URL + '/api/user'
 
 
 def generate_csrf_token():
+  """ Generate URL save CSRF token """
   return secrets.token_urlsafe(64)
 
 
 def is_valid_redirect_url(redirect_url):
+  """ Return true if a redirect URL is valid. False otherwise """
   # Only redirects to specific pages are permissible.
   # This checks that the redirect is valid. If so,
   # it returns True. Otherwise, it returns False.
@@ -43,10 +46,12 @@ def is_valid_redirect_url(redirect_url):
 
 
 class SignInError(RuntimeError):
+  """ Exception raised when a problem is encountered during signin """
   pass
 
 
 def find_user_id(username_email, api_session=None):
+  """ Call AuthWS to get a user_id for a given username or email """
   rq = api_session if api_session else requests
   params = {'username_email': username_email}
   r = rq.get(AUTHWS_USERS_URL, params=params)
@@ -63,6 +68,7 @@ def find_user_id(username_email, api_session=None):
 
 
 def authenticate_user_id(user_id, password, api_session=None):
+  """ Call AuthWS to authenticate the given user_id with the given password """
   rq = api_session if api_session else requests
   params = {'password': password}
   r = rq.get(AUTHWS_USER_URL + '/' + str(user_id) + '/authenticate', params=params)
@@ -80,6 +86,7 @@ def authenticate_user_id(user_id, password, api_session=None):
 
 
 def get_user(user_id, token, api_session=None):
+  """ Call AuthWS to get a user JSON dictionary given a user_id """
   if not user_id:
     return None
   rq = api_session if api_session else requests
@@ -94,6 +101,7 @@ def get_user(user_id, token, api_session=None):
 
 
 def authenticate_credentials(username_email, password):
+  """ Call AuthWS to authenticate a username or email + password combination"""
   with requests.session() as api_session:
     user_id = find_user_id(username_email, api_session)
     token = authenticate_user_id(user_id, password, api_session)
@@ -104,6 +112,7 @@ def authenticate_credentials(username_email, password):
 
 @app.route('/', methods=['GET'])
 def home_page():
+  """ Render a simple home page with either a signin or sign-out option """
   # TODO: Perhaps replace with WTForms and flask_wtforms?
   # Generate a new CSRF token. This is done
   # every time the signin form is generated.
@@ -123,6 +132,7 @@ def home_page():
 
 @app.route('/signin/', methods=['GET'])
 def signin_page():
+  """ Render a signin form """
   # Get the error object and related keys
   # These objects are set if there were errors in a previous
   # attempt at sign in, and the user is reaching this
@@ -163,6 +173,7 @@ def signin_page():
 
 @app.route('/signin/', methods=['POST'])
 def process_signin():
+  """ Process a signin request """
   # Reset the session user field.
   if 'user_id' in session:
     del session['user_id']
@@ -212,6 +223,7 @@ def process_signin():
 
 @app.route('/sign-out/', methods=['POST'])
 def process_sign_out():
+  """ Process a signout request """
   # Check CSRF token and return 403 Forbidden if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token')
