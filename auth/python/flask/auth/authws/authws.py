@@ -36,18 +36,29 @@ class AuthStatus(Enum):
     description = self.description
     if additional_description:
       description += ': ' + additional_description
-    return tuple([{'error_code': self.error_code, 'error_message': description}, self.http_status])
+    return tuple(
+      [{'error_code': self.error_code, 'error_message': description},
+       self.http_status])
 
   SUCCESS = HTTPStatus.OK, 'Ok'
-  NO_USERNAME_EMAIL_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter username_email not supplied'
-  NO_SUCH_USER = HTTPStatus.NOT_FOUND, 'No such user'
-  NO_PASSWORD_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
-  INCORRECT_PASSWORD = HTTPStatus.FORBIDDEN, 'Incorrect password'
-  NO_USER_TOKEN_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
-  INVALID_APP_USER_TOKEN = HTTPStatus.BAD_REQUEST, 'Invalid application user token'
-  CLIENT_ERROR = HTTPStatus.BAD_REQUEST, 'Client error'
-  INTERNAL_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
-  OTHER_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
+  NO_USERNAME_EMAIL_SUPPLIED \
+      = HTTPStatus.BAD_REQUEST, 'Query parameter username_email not supplied'
+  NO_SUCH_USER \
+      = HTTPStatus.NOT_FOUND, 'No such user'
+  NO_PASSWORD_SUPPLIED \
+      = HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
+  INCORRECT_PASSWORD \
+      = HTTPStatus.FORBIDDEN, 'Incorrect password'
+  NO_USER_TOKEN_SUPPLIED \
+      = HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
+  INVALID_APP_USER_TOKEN \
+      = HTTPStatus.BAD_REQUEST, 'Invalid application user token'
+  CLIENT_ERROR \
+      = HTTPStatus.BAD_REQUEST, 'Client error'
+  INTERNAL_ERROR \
+      = HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
+  OTHER_ERROR \
+      = HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
 
 
 class AuthError(RuntimeError):
