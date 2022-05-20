@@ -7,11 +7,16 @@ from werkzeug.exceptions import HTTPException
 from flask import Flask, request
 
 
-app = Flask(__name__)
-app.secret_key = os.environ.get('AUTHWS_FLASK_SECRET_KEY')
-if app.secret_key is None:
-  raise RuntimeError(
-    'AUTHWS_FLASK_SECRET_KEY must be set for the auth app to run')
+def create_app():
+  authws_app = Flask(__name__)
+  authws_app.secret_key = os.environ.get('AUTHWS_FLASK_SECRET_KEY')
+  if authws_app.secret_key is None:
+    raise RuntimeError(
+      'AUTHWS_FLASK_SECRET_KEY must be set for the auth app to run')
+  return authws_app
+
+
+app = create_app()
 
 
 class AuthStatus(Enum):
