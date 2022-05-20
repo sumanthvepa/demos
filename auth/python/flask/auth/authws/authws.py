@@ -39,10 +39,10 @@ class AuthStatus(Enum):
   NO_PASSWORD_SUPPLIED = 3, HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
   INCORRECT_PASSWORD = 4, HTTPStatus.FORBIDDEN, 'Incorrect password'
   NO_USER_TOKEN_SUPPLIED = 5, HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
-  INVALID_APP_USER_TOKEN = 5, HTTPStatus.BAD_REQUEST, 'Invalid application user token'
-  CLIENT_ERROR = 6, HTTPStatus.BAD_REQUEST, 'Client error'
-  INTERNAL_ERROR = 7, HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
-  OTHER_ERROR = 8, HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
+  INVALID_APP_USER_TOKEN = 6, HTTPStatus.BAD_REQUEST, 'Invalid application user token'
+  CLIENT_ERROR = 7, HTTPStatus.BAD_REQUEST, 'Client error'
+  INTERNAL_ERROR = 8, HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
+  OTHER_ERROR = 9, HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
 
 
 class AuthError(RuntimeError):
@@ -149,5 +149,3 @@ def get_user(user_id):
   if not bcrypt.checkpw(combined_key.encode('utf-8'), token):
     raise AuthError(AuthStatus.INVALID_APP_USER_TOKEN)
   return user_from_user_id(user_id)
-
-
