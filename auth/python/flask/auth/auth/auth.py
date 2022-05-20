@@ -25,7 +25,7 @@ def create_app():
 app = create_app()
 
 
-#TODO: Get these variable from settings
+# TODO: Get these variable from settings
 AUTHWS_SERVER_URL = 'http://nines.milestone42.com:5001'
 AUTHWS_USERS_URL = AUTHWS_SERVER_URL + '/api/users/'
 AUTHWS_USER_URL = AUTHWS_SERVER_URL + '/api/user'
@@ -223,7 +223,7 @@ def process_signin():
 
 @app.route('/sign-out/', methods=['POST'])
 def process_sign_out():
-  """ Process a signout request """
+  """ Process a sign-out request """
   # Check CSRF token and return 403 Forbidden if the CSRF token
   # does not match the one stored in the session.
   form_csrf_token = request.form.get('csrf_token')
