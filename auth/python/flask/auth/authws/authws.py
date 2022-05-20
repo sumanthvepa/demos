@@ -127,7 +127,7 @@ def handle_errors(ex):
   return AuthStatus.INTERNAL_ERROR.to_tuple(str(ex))
 
 
-# TODO: Move these dictionaries to authws and fetch them from the database
+# TODO: Get all this data from a DB. This is dummy code.
 users = {
   '1': {
     'user_id': 1,
