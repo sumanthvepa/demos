@@ -21,9 +21,9 @@ class AuthStatus(Enum):
     obj._value = value
     return obj
 
-  def __init__(self, error_code, http_status, description):
+  def __init__(self, http_status, description):
     super().__init__()
-    self.error_code = error_code
+    self.error_code = self._value - 1
     self.http_status = http_status
     self.description = description
 
@@ -33,16 +33,16 @@ class AuthStatus(Enum):
       description += ': ' + additional_description
     return tuple([{'error_code': self.error_code, 'error_message': description}, self.http_status])
 
-  SUCCESS = 0, HTTPStatus.OK, 'Ok'
-  NO_USERNAME_EMAIL_SUPPLIED = 1, HTTPStatus.BAD_REQUEST, 'Query parameter username_email not supplied'
-  NO_SUCH_USER = 2, HTTPStatus.NOT_FOUND, 'No such user'
-  NO_PASSWORD_SUPPLIED = 3, HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
-  INCORRECT_PASSWORD = 4, HTTPStatus.FORBIDDEN, 'Incorrect password'
-  NO_USER_TOKEN_SUPPLIED = 5, HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
-  INVALID_APP_USER_TOKEN = 6, HTTPStatus.BAD_REQUEST, 'Invalid application user token'
-  CLIENT_ERROR = 7, HTTPStatus.BAD_REQUEST, 'Client error'
-  INTERNAL_ERROR = 8, HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
-  OTHER_ERROR = 9, HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
+  SUCCESS = HTTPStatus.OK, 'Ok'
+  NO_USERNAME_EMAIL_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter username_email not supplied'
+  NO_SUCH_USER = HTTPStatus.NOT_FOUND, 'No such user'
+  NO_PASSWORD_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter password not supplied'
+  INCORRECT_PASSWORD = HTTPStatus.FORBIDDEN, 'Incorrect password'
+  NO_USER_TOKEN_SUPPLIED = HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
+  INVALID_APP_USER_TOKEN = HTTPStatus.BAD_REQUEST, 'Invalid application user token'
+  CLIENT_ERROR = HTTPStatus.BAD_REQUEST, 'Client error'
+  INTERNAL_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal error'
+  OTHER_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR, 'Other error'
 
 
 class AuthError(RuntimeError):
