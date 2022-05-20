@@ -12,12 +12,17 @@ from flask import (
   session,
   url_for)
 
-app = Flask(__name__)
 
-app.secret_key = os.environ.get('AUTH_APP_FLASK_SECRET_KEY')
-if app.secret_key is None:
-  raise RuntimeError(
-    'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
+def create_app():
+  auth_app = Flask(__name__)
+  auth_app.secret_key = os.environ.get('AUTH_APP_FLASK_SECRET_KEY')
+  if auth_app.secret_key is None:
+    raise RuntimeError(
+      'AUTH_APP_FLASK_SECRET_KEY must be set for the auth app to run')
+
+
+app = create_app()
+
 
 #TODO: Get these variable from settings
 AUTHWS_SERVER_URL = 'http://nines.milestone42.com:5001'
