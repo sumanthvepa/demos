@@ -24,7 +24,7 @@ class AuthStatus(Enum):
   """ A Smart Enum that that describes all the errors that can possibly
       occur in the operation of the auth web service """
 
-  def __new__(cls, *args, **kwds):
+  def __new__(cls, *args, **kwargs):
     """
       This method assigns every member of this enum a distinct
       ordinal count that enables each enum member to have distinct
