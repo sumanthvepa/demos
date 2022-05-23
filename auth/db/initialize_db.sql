@@ -1,16 +1,23 @@
-/*
- * This file is part of demos.
- * Demos is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * Demos is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with Foobar. If not, see <https://www.gnu.org/licenses/>.
- */
+/********************************************************************
+* This file is part of demos project.
+* (https://github.com/sumanthvepa/demos)
+*
+* Copyright (c) 2022 Sumanth Vepa.
+*
+* Demos is free software: you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* Demos is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*  GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Foobar. If not, see <https://www.gnu.org/licenses/>.
+********************************************************************/
+
 /*
   authentication_scheme
   A table describing all possible authentication schemes supported by
@@ -22,7 +29,7 @@
     Here the user provides a username and a password to signin to the
     system. Usernames are expected to be unique in the application.
    
-    email_password: An email addresss and password authentication scheme.
+    email_password: An email address and password authentication scheme.
     Here an email address is used as an identifier for the user. Email
     addresses are expected to be unique in the application.
 */
@@ -37,11 +44,11 @@ CREATE TABLE `authentication_scheme` (
 
 INSERT INTO `authentication_scheme` (
     `authentication_scheme_id`, `name`, `description`) VALUES
-  (1, "username_password", "A username and password authentication scheme"),
-  (2, "email_password", "An email and password authentication scheme"),
-  (3, "oauth_linkedin", "OAuth authenication using LinkedIn"),
-  (4, "oauth_facebook", "OAuth authenication using Facebook"),
-  (5, "oauth_google", "OAuth authenication using Google");
+  (1, 'username_password', 'A username and password authentication scheme'),
+  (2, 'email_password', 'An email and password authentication scheme'),
+  (3, 'oauth_linkedin', 'OAuth authentication using LinkedIn'),
+  (4, 'oauth_facebook', 'OAuth authentication using Facebook'),
+  (5, 'oauth_google', 'OAuth authentication using Google');
 
 
 CREATE TABLE `user` (

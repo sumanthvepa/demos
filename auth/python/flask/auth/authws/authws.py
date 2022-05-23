@@ -1,13 +1,19 @@
 #####################################################################
-# This file is part of demos.
+# This file is part of demos project.
+# (https://github.com/sumanthvepa/demos)
+#
+# Copyright (c) 2022 Sumanth Vepa.
+
 # Demos is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
+#
 # Demos is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 #  GNU General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
 # along with Foobar. If not, see <https://www.gnu.org/licenses/>.
 #####################################################################
@@ -15,22 +21,62 @@
 import os
 from enum import Enum
 from http import HTTPStatus
+from urllib.parse import quote
 
 import bcrypt
 from werkzeug.exceptions import HTTPException
 from flask import Flask, request
+from sqlalchemy import create_engine, text
+
+
+def get_required_environment_variable(variable_name, error_message):
+  variable = os.environ.get(variable_name)
+  if not variable:
+    raise RuntimeError(error_message)
+  return variable
+
+
+def create_db():
+  db_host = get_required_environment_variable(
+    'AUTHWS_DB_HOST',
+    'AUTHWS_DB_HOST environment variable must be set for the '
+    + 'authws webservice to run')
+  db_host = quote(db_host.strip())
+
+  db_name = get_required_environment_variable(
+    'AUTHWS_DB_NAME',
+    'AUTHWS_DB_NAME environment variable must be set for the '
+    + 'authws webservice to run')
+  db_name = quote(db_name.strip())
+
+  db_user = get_required_environment_variable(
+    'AUTHWS_DB_USER',
+    'AUTHWS_DB_USER environment variable must be set for the '
+    + 'authws webservice to run')
+  db_user = quote(db_user.strip())
+
+  db_password = get_required_environment_variable(
+    'AUTHWS_DB_PASSWORD',
+    'AUTHWS_DB_PASSWORD environment variable must be set for the '
+    + 'authws webservice to run')
+  db_password = quote(db_password.strip())
+
+  connect_url = f'mariadb+pymysql://' \
+      + f'{db_user}:{db_password}@{db_host}/{db_name}' \
+      + f'?charset=utf8mb4'
+  return create_engine(connect_url, echo=False, future=True, pool_recycle=3600)
 
 
 def create_app():
   """ Create a properly configured auth web service app"""
   authws_app = Flask(__name__)
-  authws_app.secret_key = os.environ.get('AUTHWS_FLASK_SECRET_KEY')
-  if authws_app.secret_key is None:
-    raise RuntimeError(
-      'AUTHWS_FLASK_SECRET_KEY must be set for the auth app to run')
+  authws_app.secret_key = get_required_environment_variable(
+    'AUTHWS_FLASK_SECRET_KEY',
+    'AUTHWS_FLASK_SECRET_KEY must be set for the auth app to run')
   return authws_app
 
 
+db = create_db()
 app = create_app()
 
 
@@ -81,6 +127,9 @@ class AuthStatus(Enum):
       = HTTPStatus.BAD_REQUEST, 'Query parameter token was not supplied'
   INVALID_APP_USER_TOKEN \
       = HTTPStatus.BAD_REQUEST, 'Invalid application user token'
+  CORRUPTED_DATABASE_TOO_MANY_USER_IDS \
+      = HTTPStatus.INTERNAL_SERVER_ERROR,\
+        'Corrupted database too many internal user_ids found for the given username or email'
   CLIENT_ERROR \
       = HTTPStatus.BAD_REQUEST, 'Client error'
   INTERNAL_ERROR \
@@ -145,32 +194,48 @@ by_username = dict(zip([user['username'] for user in users.values()], users.valu
 by_email = dict(zip([user['email'] for user in users.values()], users.values()))
 
 
-def find_user_by_username(username):
-  # TODO: Replace this with real code
-  return by_username.get(username, None)
+def db_result_to_tuple(result):
+  return [tuple(row) for row in result.all()]
 
 
-def find_user_by_email(email):
-  # TODO: Replace this with real code.
-  return by_email.get(email, None)
+def find_user_id_by_username_or_email(username_email):
+  with db.connect() as connection:
+    sql = "select user_id from username where username = :username_email " \
+          + "union " \
+          + "select user_id from email where email = :username_email "
+    bind_variables = {'username_email': username_email}
+    result = db_result_to_tuple(connection.execute(text(sql), bind_variables))
+    if len(result) < 1:
+      raise AuthError(AuthStatus.NO_SUCH_USER)
+    if len(result) > 1:
+      raise AuthError(AuthStatus.CORRUPTED_DATABASE_TOO_MANY_USER_IDS)
+    return result[0][0]
 
 
-def find_user_by_username_or_email(username_email):
-  # TODO: Replace this with real code.
-  from_username = find_user_by_username(username_email)
-  from_email = find_user_by_email(username_email)
-  user = from_username or from_email
-  if not user:
-    raise AuthError(AuthStatus.NO_SUCH_USER)
-  return user
+def password_hash_from_user_id(user_id):
+  with db.connect() as connection:
+    sql = "select password_hash from password where user_id = :user_id"
+    bind_variables = {'user_id': int(user_id)}
+    result = db_result_to_tuple(connection.execute(text(sql), bind_variables))
+    if len(result) < 1:
+      raise AuthError(AuthStatus.NO_SUCH_USER)
+    if len(result) > 1:
+      raise AuthError(AuthStatus.CORRUPTED_DATABASE_TOO_MANY_USER_IDS)
+    return result[0][0]
 
 
 def user_from_user_id(user_id):
-  # TODO: Replace this with real code.
-  user = users.get(str(user_id), None)
-  if not user:
-    raise AuthError(AuthStatus.NO_SUCH_USER)
-  return user
+  with db.connect() as connection:
+    sql = "select user.user_id, username.username, email.email, user.display_name" \
+          + " from user left join username on user.user_id = username.user_id " \
+          + "left join email on email.user_id = user.user_id where user.user_id = :user_id"
+    bind_var = {'user_id': int(user_id)}
+    result = db_result_to_tuple(connection.execute(text(sql), bind_var))
+    if len(result) < 1:
+      raise AuthError(AuthStatus.NO_SUCH_USER)
+    if len(result) > 1:
+      raise AuthError(AuthStatus.CORRUPTED_DATABASE_TOO_MANY_USER_IDS)
+    return dict(zip(['user_id', 'username', 'email', 'display_name'], list(result[0])))
 
 
 @app.route('/api/users/', methods=['GET'])
@@ -179,7 +244,7 @@ def find_user():
   username_email = request.args.get('username_email')
   if not username_email:
     raise AuthError(AuthStatus.NO_USERNAME_EMAIL_SUPPLIED)
-  return {'user_id': find_user_by_username_or_email(username_email)['user_id']}
+  return {'user_id': find_user_id_by_username_or_email(username_email)}
 
 
 @app.route('/api/user/<int:user_id>/authenticate', methods=['GET'])
@@ -195,7 +260,9 @@ def authenticate_user(user_id):
   password = request.args.get('password')
   if not password:
     raise AuthError(AuthStatus.NO_PASSWORD_SUPPLIED)
-  password_hash = password_hashes.get(str(user['user_id']))
+
+  password_hash = password_hash_from_user_id(user_id).encode('utf-8')
+
   if not bcrypt.checkpw(password.encode('utf-8'), password_hash):
     raise AuthError(AuthStatus.INCORRECT_PASSWORD)
 

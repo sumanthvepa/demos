@@ -1,0 +1,157 @@
+#!/bin/env python3
+#####################################################################
+# This file is part of demos project.
+# (https://github.com/sumanthvepa/demos)
+#
+# Copyright (c) 2022 Sumanth Vepa.
+
+# Demos is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Demos is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Foobar. If not, see <https://www.gnu.org/licenses/>.
+#####################################################################
+
+import argparse
+import os
+import sys
+from urllib.parse import quote
+
+from sqlalchemy import create_engine, text
+
+
+def raise_if_none(variable, variable_name):
+  if not variable:
+    raise RuntimeError(
+      f'{variable_name} needs to be specified for this program to run.')
+
+
+def get_database_parameters():
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+    '-d', '--db_host',
+    type=str, default=None,
+    help='Specify the hostname of the database server '
+         + '(uses the value of the environment variable AUTHWS_DB_HOST if not specified '
+         + 'or localhost if that is not specified either)')
+  parser.add_argument(
+    '-n', '--db_name',
+    type=str, default=None,
+    help='Specify the name of the database '
+         + '(uses the value of the environment variable AUTHWS_DB_NAME if not specified)')
+  parser.add_argument(
+    "-u", "--db_user",
+    type=str, default=None,
+    help='Specify the database username '
+         + '(uses the value of the environment variable AUTHWS_DB_USER if not specified)')
+  parser.add_argument(
+    "-p", "--db_password",
+    type=str, default=None,
+    help='Specify the database password. '
+         + 'uses the value of the environment variable AUTHWS_DB_PASSWORD if not specified)')
+  parser.add_argument(
+    "-i", "--id",
+    default=False, dest='search_user_id', action='store_true',
+    help='Treat the arguments as user ids, not usernames or emails'
+  )
+  parser.add_argument(
+    "username_email_ids", nargs="+",
+    help='The username or the email address of the user to search for in the database. '
+         + 'If the --id option is specified the argument is treated as the user '
+         + 'id of the user to be searched for')
+
+  args = parser.parse_args()
+
+  db_host = args.db_host or os.environ.get('AUTHWS_DB_HOST', None) or 'localhost'
+  db_name = args.db_name or os.environ.get('AUTHWS_DB_NAME', None)
+  raise_if_none(db_name, 'Database name (db_name)')
+  db_user = args.db_user or os.environ.get('AUTHWS_DB_USER', None)
+  raise_if_none(db_user, 'Database user (db_user)')
+  db_password = args.db_password or os.environ.get('AUTHWS_DB_PASSWORD', None)
+  raise_if_none(db_password, 'Database password (db_password')
+  username_emails = args.username_email_ids if not args.search_user_id else None
+  try:
+    user_ids = [int(user_id) for user_id in args.username_email_ids] if args.search_user_id else None
+  except ValueError as ex:
+    raise RuntimeError('UserIds must be integers')
+
+  return {
+    'db_host': db_host,
+    'db_name': db_name,
+    'db_user': db_user,
+    'db_password': db_password,
+    'username_emails': username_emails,
+    'user_ids': user_ids
+  }
+
+
+def create_db(db_host, db_name, db_user, db_password):
+  connect_url = f'mariadb+pymysql://' \
+                + f'{quote(db_user)}:{quote(db_password)}@{quote(db_host)}/{quote(db_name)}' \
+                + f'?charset=utf8mb4'
+  return create_engine(connect_url, echo=False, future=True, pool_recycle=3600)
+
+
+def find_user(connection, username_email):
+  sql = "select user_id from username where username = :username_email " \
+        + "union " \
+        + "select user_id from email where email = :username_email "
+  bind_variables = {'username_email': username_email}
+  result = connection.execute(text(sql), bind_variables)
+  data = tuple(result.all())
+  if len(data) < 1:
+    raise RuntimeError(f'No user with username or email: {username_email}')
+  if len(data) > 1:
+    raise RuntimeError(
+      'Internal data inconsistency error. '
+      + 'Found more than one user_id for the given username or email.')
+  return data[0][0]
+
+
+def does_user_id_exist(connection, user_id):
+  sql = "select user_id from user where user_id = :user_id"
+  bind_variables = {'user_id': user_id}
+  result = connection.execute(text(sql), bind_variables)
+  data = tuple(result.all())
+  if len(data) < 1: return False
+  if len(data) > 1:
+    raise RuntimeError(
+      'Internal data inconsistency error. '
+      + 'Found more than one user_id for the given username or email.')
+  return True
+
+
+def find_users(connection, username_emails):
+  return dict(zip(
+    username_emails,
+    [find_user(connection, username_email) for username_email in username_emails]))
+
+
+def do_user_ids_exist(connection, user_ids):
+  return dict(zip(
+    user_ids,
+    [does_user_id_exist(connection, user_id) for user_id in user_ids]))
+
+
+def main():
+  try:
+    parameters = get_database_parameters()
+    db = create_db(*list(parameters.values())[:4])
+    with db.connect() as connection:
+      if parameters.get('username_emails', None):
+        print(find_users(connection, parameters.get('username_emails')))
+      else:
+        print(do_user_ids_exist(connection, parameters.get('user_ids')))
+  except RuntimeError as ex:
+    print(ex, file=sys.stderr)
+
+
+if __name__ == '__main__':
+  main()

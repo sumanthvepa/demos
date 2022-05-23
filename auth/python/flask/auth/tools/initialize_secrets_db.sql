@@ -1,0 +1,1 @@
+../../../../db/initialize_secrets_db.sql

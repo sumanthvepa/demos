@@ -1,0 +1,1 @@
+../../../../db/erase_secrets_db.sql
