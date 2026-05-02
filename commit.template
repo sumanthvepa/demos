@@ -1,0 +1,27 @@
+issueNNN-issue-name or issueNNN,NNN+k... for multiple issues: Summary of the commit
+
+FEATURE(s)
+issueNNN-issue-name:
+  Issue description
+issueNNN+K-issue-name:
+  Issue description
+
+FILE(s)
+List of files that are staged for commit
+(see the output of git status)
+For each file make and entry.
+xamples of various types of changes are shown.
+[modified]dir/to/file:
+  Summary of changes to the file
+  Can be multiple lines
+[new]/dir/to/file2:
+  Summary of whats in the file
+[renamed]/dir/to/oldname -> /dir/to/newname:
+  Reason for renaming
+[typechange]/dir/to/file3:
+  Reason for typechange
+
+DESCRIPTION
+A more extensive desciption of the commit if the one line summary
+above is not sufficient.
+
