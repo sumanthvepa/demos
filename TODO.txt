@@ -1,2 +1,2 @@
-issue002-force-diagrams: Render force diagrams given specification
-issue001-initialize-repository: Initialize the repository
+issue001-initialize-repository:
+  Initialize the repository
