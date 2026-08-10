@@ -1,2 +1,4 @@
-issue001-initialize-repository:
+[DONE]issue002-selecting-polynomial-coefficients:
+  Note on selecting polynomial coefficients
+[DONE]issue001-initialize-repository:
   Initialize the repository
